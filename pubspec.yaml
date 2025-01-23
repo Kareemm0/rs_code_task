@@ -1,8 +1,7 @@
 name: rs_code_task
 description: "A new Flutter project."
 
-publish_to: 'none' 
-
+publish_to: 'none'
 
 version: 1.0.0+1
 
@@ -10,6 +9,7 @@ environment:
   sdk: ^3.6.0
 
 dependencies:
+  connectivity_plus: ^6.1.2
   cupertino_icons: ^1.0.8
   device_info_plus: ^11.2.1
   dio: ^5.7.0
@@ -20,6 +20,7 @@ dependencies:
   open_file: ^3.5.10
   path_provider: ^2.1.5
   permission_handler: ^11.3.1
+  shared_preferences: ^2.3.5
   shelf: ^1.4.2
 
 dev_dependencies:

@@ -6,6 +6,11 @@ import 'package:dio/dio.dart';
 import 'package:install_plugin/install_plugin.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart' as http;
+import 'package:rs_code_task/shared_key.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+import 'connectivity_code.dart';
+import 'shred_pref_code.dart';
 
 class UserScreen extends StatefulWidget {
   const UserScreen({super.key});
@@ -66,6 +71,28 @@ class _UserScreenState extends State<UserScreen> {
     }
   }
 
+  Future<void> sendStoredProcessorType() async {
+    final prefs = await SharedPreferences.getInstance();
+    final storedProcessorType = prefs.getString(SharedKey.offline);
+
+    if (storedProcessorType != null && storedProcessorType.isNotEmpty) {
+      log('Found stored processor type: $storedProcessorType');
+
+      try {
+        final downloadUrl = await sendProcessorType(storedProcessorType);
+
+        if (downloadUrl != null) {
+          await prefs.remove('offlineProcessorType');
+          log('Stored processor type sent successfully and cleared');
+        }
+      } catch (e) {
+        log('Failed to send stored processor type: $e');
+      }
+    } else {
+      log('No stored processor type to send');
+    }
+  }
+
   Future<void> downloadFile(String url, String savePath) async {
     final dio = Dio();
 
@@ -110,17 +137,26 @@ class _UserScreenState extends State<UserScreen> {
       }
 
       final processorType = await getProcessorType();
-      final downloadUrl = await sendProcessorType(processorType);
+      final online = await isOnline();
 
-      if (downloadUrl != null) {
-        final savePath = '${(await getTemporaryDirectory()).path}/update.apk';
+      if (online) {
+        final downloadUrl = await sendProcessorType(processorType);
 
-        await downloadFile(downloadUrl, savePath);
-        await installApk(savePath);
-        deleteFile(savePath);
+        if (downloadUrl != null) {
+          final savePath = '${(await getTemporaryDirectory()).path}/update.apk';
 
+          await downloadFile(downloadUrl, savePath);
+          await installApk(savePath);
+          deleteFile(savePath);
+
+          setState(() {
+            progress = "Update Complete!";
+          });
+        }
+      } else {
+        await saveProcessorTypeOffline(processorType);
         setState(() {
-          progress = "Update Complete!";
+          progress = "Offline: Processor type saved locally.";
         });
       }
     } catch (e) {
@@ -137,6 +173,7 @@ class _UserScreenState extends State<UserScreen> {
   @override
   void initState() {
     fetchAdminIp();
+    sendStoredProcessorType();
     super.initState();
   }
 
